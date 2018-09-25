@@ -75,27 +75,29 @@
           logit( phi[i, k-1 ] ) <- int.phi + 
                           beta.phi[ 1 ] * ForagArea[ i ] + #beta1
                           inprod( beta.phi[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
-                          beta.phi[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
-                          beta.phi[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
-                          beta.phi[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
-                          beta.phi[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
-                          beta.phi[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
-                          beta.phi[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
-                          beta.phi[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
-                          beta.phi[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          #Predictors 2:6 include: EglAbund[k], FishYr[k], IceOut[k], MinT[k], Rain[k]
+                          beta.phi[ ( XKno + 2 ) ] * EglDistO[ i, k ] + #beta7
+                          beta.phi[ ( XKno + 3 ) ] * EglDistS[ i, k ] + #beta8
+                          beta.phi[ ( XKno + 4 ) ] * EglCompO[ i, k ] + #beta9
+                          beta.phi[ ( XKno + 5 ) ] * EglCompS[ i, k ] + #beta10
+                          beta.phi[ ( XKno + 6 ) ] * EglUncontO[ i, k ] + #beta11
+                          beta.phi[ ( XKno + 7 ) ] * EglUncontS[ i, k ] + #beta12
+                          beta.phi[ ( XKno + 8 ) ] * FishLocal[ i, k ] + #beta13
+                          beta.phi[ ( XKno + 9 ) ] * FishXArea[ i, k ] + #beta14
                           beta.phi[ Xtot ] * PondAge[ i ] #beta15
           #model for colonization probability:
           logit( gam[i, k-1 ] ) <- int.gam + 
                           beta.gam[ 1 ] * ForagArea[ i ] + #beta1
                           inprod( beta.gam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
-                          beta.gam[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
-                          beta.gam[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
-                          beta.gam[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
-                          beta.gam[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
-                          beta.gam[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
-                          beta.gam[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
-                          beta.gam[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
-                          beta.gam[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          #Predictors 2:6 include: EglAbund[k], FishYr[k], IceOut[k], MinT[k], Rain[k]
+                          beta.gam[ ( XKno + 2 ) ] * EglDistO[ i, k ] + #beta7
+                          beta.gam[ ( XKno + 3 ) ] * EglDistS[ i, k ] + #beta8
+                          beta.gam[ ( XKno + 4 ) ] * EglCompO[ i, k ] + #beta9
+                          beta.gam[ ( XKno + 5 ) ] * EglCompS[ i, k ] + #beta10
+                          beta.gam[ ( XKno + 6 ) ] * EglUncontO[ i, k ] + #beta11
+                          beta.gam[ ( XKno + 7 ) ] * EglUncontS[ i, k ] + #beta12
+                          beta.gam[ ( XKno + 8 ) ] * FishLocal[ i, k ] + #beta13
+                          beta.gam[ ( XKno + 9 ) ] * FishXArea[ i, k ] + #beta14
                           beta.gam[ Xtot ] * PondAge[ i ] #beta15
         } #k season
       } #i site
@@ -107,14 +109,15 @@
           logit( zeta[ i, k ] ) <- int.zeta + eps.zeta[ k ] + epsID.zeta[ i ] +
                           beta.zeta[ 1 ] * ForagArea[ i ] + #beta1
                           inprod( beta.zeta[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
-                          beta.zeta[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
-                          beta.zeta[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
-                          beta.zeta[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
-                          beta.zeta[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
-                          beta.zeta[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
-                          beta.zeta[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
-                          beta.zeta[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
-                          beta.zeta[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          #Predictors 2:6 include: EglAbund[k], FishYr[k], IceOut[k], MinT[k], Rain[k]
+                          beta.zeta[ ( XKno + 2 ) ] * EglDistO[ i, k ] + #beta7
+                          beta.zeta[ ( XKno + 3 ) ] * EglDistS[ i, k ] + #beta8
+                          beta.zeta[ ( XKno + 4 ) ] * EglCompO[ i, k ] + #beta9
+                          beta.zeta[ ( XKno + 5 ) ] * EglCompS[ i, k ] + #beta10
+                          beta.zeta[ ( XKno + 6 ) ] * EglUncontO[ i, k ] + #beta11
+                          beta.zeta[ ( XKno + 7 ) ] * EglUncontS[ i, k ] + #beta12
+                          beta.zeta[ ( XKno + 8 ) ] * FishLocal[ i, k ] + #beta13
+                          beta.zeta[ ( XKno + 9 ) ] * FishXArea[ i, k ] + #beta14
                           beta.zeta[ Xtot ] * PondAge[ i ] #beta15 Beaver ponds
           #nest success related to prob of success conditional on nest occupancy:
           suc_obs[ i, k ] ~ dbern( zeta[ i, k ] * z[ i, k ] ) 
