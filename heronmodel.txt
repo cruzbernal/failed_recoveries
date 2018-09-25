@@ -59,8 +59,9 @@
           #model for suitability (i.e. probability of heronry occurrence):
           logit( omg[ i, k ] ) <- int.omg + eps.omg[ k ] + epsID.omg[ i ] +
               beta.omg[ 1 ] * ForagArea[ i ] + #beta1
-              inprod( beta.lam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:7
-              beta.omg[ ( XKno + 2 ) ] * Fish_nest[ i, k ] + #beta8
+              inprod( beta.lam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:7.  
+              #Predictors include: EglAbund[k], FishYr[k], IceOut[k], MinT[k], Rain[k], OspAbund[k]
+              beta.omg[ ( XKno + 2 ) ] * FishLocal[ i, k ] + #beta8
               beta.omg[ ( XKno + 3 ) ] * FishXArea[ i, k ] + #beta9
               beta.omg[ ( XKno + 4 ) ] * EglDistO[ i, k ] + #beta10
               beta.omg[ ( XKno + 5 ) ] * EglCompO[ i, k ] + #beta11
@@ -72,7 +73,8 @@
           log( lam[ i, k ] ) <- int.lam + eps.lam[ k ] + epsID.lam[ i ] +
               beta.lam[ 1 ] * ForagArea[ i ] + #beta1
               inprod( beta.lam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:7
-              beta.lam[ ( XKno + 2 ) ] * Fish_nest[ i, k ] + #beta8
+              #Predictors include: EglAbund[k], FishYr[k], IceOut[k], MinT[k], Rain[k], OspAbund[k]
+              beta.lam[ ( XKno + 2 ) ] * FishLocal[ i, k ] + #beta8
               beta.lam[ ( XKno + 3 ) ] * FishXArea[ i, k ] + #beta9
               beta.lam[ ( XKno + 4 ) ] * EglDistO[ i, k ] + #beta10
               beta.lam[ ( XKno + 5 ) ] * EglCompO[ i, k ] + #beta11
