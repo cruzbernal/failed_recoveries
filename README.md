@@ -1,10 +1,12 @@
 # failed_recoveries
-Evaluating the influence of top-down and bottom-up factors on the failed recoveries of osprey and great blue heron populations in 
-Voyageurs National Park, Minnesota, USA.
+Code created by Jen Cruz for: 
 
-Code created by Jen Cruz for: Cruz J., Windels S.K., Thogmartin W.E., Crimmins S.M., Grim L.H., Larson J.H., Zuckerberg B. (in review) 
+Cruz J., Windels S.K., Thogmartin W.E., Crimmins S.M., Grim L.H., Larson J.H., Zuckerberg B. (in review) 
 'Repatriating top predator hinders the joint recovery of competitor species'. Conservation Letters
 
+Purpose:
+Evaluating the influence of top-down and bottom-up factors on the failed recoveries of osprey and great blue heron populations in 
+Voyageurs National Park, Minnesota, USA.
 
 Code includes: 
 JAGs code for the (1) osprey and (2) heron models. 
