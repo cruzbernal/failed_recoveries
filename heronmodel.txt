@@ -1,0 +1,135 @@
+
+     model{
+     
+      #intercept priors:
+      #for occurrence as mean prob:    
+      int.omg <- log( mean.omg / ( 1 - mean.omg ) )
+      mean.omg ~ dbeta( 4, 4 )  #mean heronry occurrence
+      #for abundance:
+      int.lam ~ dnorm( 0, 0.1 ) #strong prior 
+
+      #random year effectS
+      for ( k in 1:K ){  #loop over seasons
+        eps.omg[ k ] ~ dnorm( 0, var.omg ) T(-10, 10) 
+        eps.lam[ k ] ~ dnorm( 0, var.lam ) T(-10, 10) 
+      } #K
+      #random nest ID effects:
+      for ( i in 1:M ){  #loop over heronries
+        epsID.omg[ i ] ~ dnorm( 0, varID.omg ) T(-10, 10) 
+        epsID.lam[ i ] ~ dnorm( 0, varID.lam ) T(-10, 10) 
+      } #i
+     
+      #associated variance of random year effects:     
+      var.omg <- 1/ ( sigma.omg * sigma.omg )
+      sigma.omg ~ dt( 0, 1, 4 ) T( 0, )
+      var.lam <- 1/ ( sigma.lam * sigma.lam )
+      sigma.lam ~ dt( 0, 1, 4 ) T( 0, )
+     
+      #associated variance of random heronry ID effects:     
+      varID.omg <- 1 / ( sigmaID.omg * sigmaID.omg )
+      sigmaID.omg ~ dt( 0, 1, 4 ) T( 0, )
+      varID.lam <- 1 / ( sigmaID.lam * sigmaID.lam )
+      sigmaID.lam ~ dt( 0, 1, 4 ) T( 0, ) 
+     
+      #priors for occurrence and abundance coefficients:
+      #using George and McCulloch (1993) specification of beta priors for stochastic variable selection
+      #outlined in Hooten & Hobbs(2015) pg. 23 and in Kery & Royle Applied Hierarchical Modelling book chpt 7, pg 342
+      #the c.var and tau.var are set outside the model (as part of data) to allow their easy modification.
+      for ( n in 1:( Xtot ) ) { #loop over all occurrence covariates except the intercept
+     
+        #delta is an indicator that determines which prior is used for the betas:
+        delta.omg[ n ] ~ dbern( 0.5 ) #0.5 means that there is equal chance of selecting alternative models
+        delta.lam[ n ] ~ dbern( 0.5 )
+        #define beta variance as c.var * tau.var, if delta.omg == 1, and as tau.var if delta.omg == 0:
+        beta.omg.var[ n ] <- delta.omg[ n ] * c.var * tau.var + ( 1 - delta.omg[ n ] ) * tau.var
+        beta.omg.pres[ n ] <- 1 / beta.omg.var[ n ] #convert chosen variance to precision
+        beta.omg[ n ] ~ dnorm( 0, beta.omg.pres[ n ] ) #beta prior
+        beta.lam.var[ n ] <- delta.lam[ n ] * c.var * tau.var + ( 1 - delta.lam[ n ] ) * tau.var
+        beta.lam.pres[ n ] <- 1 / beta.lam.var[ n ] #convert chosen variance to precision
+        beta.lam[ n ] ~ dnorm( 0, beta.lam.pres[ n ] ) #beta prior
+      }
+     
+      #ecological model
+      #for occupancy:
+      for ( i in 1:M ){  #loop over sites
+        for ( k in 1:K ) { #loop over seasons
+          #observed occurence is related to suitability of site i at time k
+          y_obs[ i, k ] ~ dbern( omg[ i, k ] )
+     
+          #model for suitability (i.e. probability of heronry occurrence):
+          logit( omg[ i, k ] ) <- int.omg + eps.omg[ k ] + epsID.omg[ i ] +
+              beta.omg[ 1 ] * ForagArea[ i ] + #beta1
+              inprod( beta.lam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:7
+              beta.omg[ ( XKno + 2 ) ] * Fish_nest[ i, k ] + #beta8
+              beta.omg[ ( XKno + 3 ) ] * FishXArea[ i, k ] + #beta9
+              beta.omg[ ( XKno + 4 ) ] * EglDistO[ i, k ] + #beta10
+              beta.omg[ ( XKno + 5 ) ] * EglCompO[ i, k ] + #beta11
+              beta.omg[ ( XKno + 6 ) ] * OspDistO[ i, k ] + #beta12
+              beta.omg[ (Xtot - 1) ] * OspCompO[ i, k ] + #beta13 
+              beta.omg[ Xtot ] * PondAge[ i ] #beta14
+     
+          #model for expected abundance (i.e. heronry size):
+          log( lam[ i, k ] ) <- int.lam + eps.lam[ k ] + epsID.lam[ i ] +
+              beta.lam[ 1 ] * ForagArea[ i ] + #beta1
+              inprod( beta.lam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:7
+              beta.lam[ ( XKno + 2 ) ] * Fish_nest[ i, k ] + #beta8
+              beta.lam[ ( XKno + 3 ) ] * FishXArea[ i, k ] + #beta9
+              beta.lam[ ( XKno + 4 ) ] * EglDistO[ i, k ] + #beta10
+              beta.lam[ ( XKno + 5 ) ] * EglCompO[ i, k ] + #beta11
+              beta.lam[ ( XKno + 6 ) ] * OspDistO[ i, k ] + #beta12
+              beta.lam[ ( Xtot - 1) ] * OspCompO[ i, k ] + #beta13
+              beta.lam[ Xtot ] * PondAge[ i ] #beta14
+
+          #observed heronry size is related to abundance and occurrence:
+          lam_obs[ i, k ] <- lam[ i, k ] * y_obs[ i, k ] + 
+                            ( 1 - y_obs[ i, k ] ) * lam[ i, k ] * 1e-10
+          n_obs[ i, k ] ~ dpois( lam_obs[ i, k ] ) 
+     
+          #estimate predicted occurrences from model:
+          y_hat[ i, k ] ~ dbern( omg[ i, k ] )
+          #estimate predicted abundances:
+          #JAGs cannot compile if it observes a non-zero n_hat from a mean-zero Poisson distribution so:
+          lam_hat[ i, k ] <- lam[ i, k ] * y_hat[ i, k ] + 
+                            ( 1 - y_hat[ i, k ] ) * lam[ i, k ] * 1e-10
+          n_hat[ i, k ] ~ dpois( lam_hat[ i, k ]  )
+        } #i
+      } #k
+     
+      #estimating likelihood of each heronry, each season:
+      for ( i in 1:M ){  #loop over sites
+        for ( k in 1:K ) { #loop over seasons
+     
+          # Bernoulli likelihood of observing each occurrence (y_obs):
+          #create indicator based on observations of occurrence to deal with observed NAs:
+          y_ind[ i, k ] <- ifelse( y_obs[ i, k ] == 1, 1, 0 )
+          #calculate likelihood for observed (y_obs):
+          lik_yobs[ i, k ] <- ( omg[ i,k ] )^y_ind[ i,k ] *
+                            ( 1 - omg[ i,k ] )^( 1 - y_ind[ i, k ] )
+          #calculate likelihood for predicted observations (y_hat):
+          lik_yhat[ i, k ] <- ( omg[ i,k ] )^y_hat[ i,k ] *
+                              ( 1 - omg[ i,k ] )^( 1 - y_hat[ i, k ] )
+       
+          # Poisson likelihood for n_obs conditional on observed occupancy(y_obs=1):
+          #first create indicator to deal with NAs:
+          n_ind[ i, k ] <-  ifelse( n_obs[ i, k ] > 0, n_obs[ i, k ], 0 )
+          llik_nobs[ i, k ] <- -lam[ i, k ] + log( lam_obs[ i, k ] ) * n_ind[ i, k ]
+          llik_nhat[ i, k ] <- -lam[ i, k ] + log( lam_hat[ i, k ] ) * n_hat[ i, k ]
+     
+        } #i
+      } #k
+     
+      #derived parameters:
+      for( k in 1:K ){
+        #get yearly means only for heronries inside VNP that were surveyed that year:
+        omg.k[ k ] <- sum( omg[ 1:M, k ] * inVNP[ 1:M ] * surv_ind[ 1:M, k ] ) /
+                  ifelse( sum( inVNP[ 1:M ] * surv_ind[ 1:M, k ] ) == 0, 1,
+                  sum( inVNP[ 1:M ] * surv_ind[ 1:M, k ] ) ) #avoiding division by zero
+        #mean abundance only for heronries sampled inside the park:
+        lam.k[ k ] <- sum( lam[ 1:M, k ] * inVNP[ 1:M ]  ) /
+                      ifelse( sum( inVNP[ 1:M ] * y_ind[ 1:M, k ] ) == 0, 1,
+                      sum( inVNP[ 1:M ] * y_ind[ 1:M, k ] ) )
+      } #k
+     
+     } #model close
+     
+     

@@ -1,0 +1,177 @@
+
+     model{
+     
+      #priors
+      #for occupancy model:    
+      #occupancy probability for season 1  
+      psi1 ~ dbeta( 4, 4 ) 
+     
+      #define intercepts for ecological models as mean probs:
+      int.phi <- log( mean.phi / ( 1 - mean.phi ) )
+      mean.phi ~ dbeta( 4, 4 )  #mean nest survival prob
+      int.gam <- log( mean.gam / ( 1 - mean.gam ) )
+      mean.gam ~ dbeta( 4, 4 )  #mean nest colonization prob
+      int.zeta <- log( mean.zeta / ( 1 - mean.zeta ) )
+      mean.zeta ~ dbeta( 4, 4 )  #mean nest success prob
+     
+      #random year effectS
+      for ( k in 1:K ){  #loop over seasons
+        #for nest success
+        eps.zeta[ k ] ~ dnorm( 0, var.zeta ) T(-10, 10) 
+      } #K
+     
+      #associated variance of random year effects:     
+      var.zeta <- 1/ ( sigma.zeta * sigma.zeta )
+      sigma.zeta ~ dt( 0, 1, 4 ) T( 0, )
+       
+      #random nest ID effects:
+      for ( i in 1:M ){  #loop over nests
+        #for nest success
+        epsID.zeta[ i ] ~ dnorm( 0, varID.zeta ) T(-10, 10) 
+      } #i
+     
+      #associated variance of random nest ID effects:     
+      varID.zeta <- 1 / ( sigmaID.zeta * sigmaID.zeta )
+      sigmaID.zeta ~ dt( 0, 1, 4 ) T( 0, )
+       
+      #priors for occupancy and reproductive coefficients:
+      #using George and McCulloch (1993) specification of beta priors for stochastic variable selection
+      #outlined in Hooten & Hobbs(2015) pg. 23 and in Kery & Royle Applied Hierarchical Modelling book chpt 7, pg 342
+      #the c.var and tau.var are set outside the model (as part of data) to allow their easy modification.
+      for ( n in 1:( Xtot ) ) { #loop over all occupancy covariates except the interaction
+        #delta is an indicator that determines which prior is used for the betas:
+        delta.phi[ n ] ~ dbern( 0.5 ) #0.5 means that there is equal chance of selecting alternative models
+        delta.gam[ n ] ~ dbern( 0.5 )
+        delta.zeta[ n ] ~ dbern( 0.5 ) #indicator variable for nest success
+        #define beta variance as c.var * tau.var, if delta.occ == 1, and as tau.var if delta.occ == 0:
+        beta.phi.var[ n ] <- delta.phi[ n ] * c.var * tau.var + ( 1 - delta.phi[ n ] ) * tau.var
+        beta.phi.pres[ n ] <- 1 / beta.phi.var[ n ] #convert chosen variance to precision
+        beta.phi[ n ] ~ dnorm( 0, beta.phi.pres[ n ] ) #beta prior
+        beta.gam.var[ n ] <- delta.gam[ n ] * c.var * tau.var + ( 1 - delta.gam[ n ] ) * tau.var
+        beta.gam.pres[ n ] <- 1 / beta.gam.var[ n ] #convert chosen variance to precision
+        beta.gam[ n ] ~ dnorm( 0, beta.gam.pres[ n ] ) #beta prior
+        beta.zeta.var[ n ] <- delta.zeta[ n ] * c.var * tau.var + ( 1 - delta.zeta[ n ] ) * tau.var
+        beta.zeta.pres[ n ] <- 1 / beta.zeta.var[ n ] #convert chosen variance to precision
+        beta.zeta[ n ] ~ dnorm( 0, beta.zeta.pres[ n ] ) #beta prior
+      }
+     
+      #priors for detection model for occupancy:
+      int.p <- logit( mean.p ) #intercept
+      mean.p ~ dbeta( 4, 4 ) #mean prob of detecting an occupied nest
+      for( n in 1:2 ){ 
+        alpha.p[ n ] ~ dnorm( 0, 0.1 ) #strong prior for alpha parameters
+      }
+     
+      #ecological model
+      #for occupancy:
+      for ( i in 1:M ){  #loop over sites
+        psi[ i, 1 ] <- psi1
+        z[ i, 1 ] ~ dbern( psi[ i, 1 ] ) #latent, true occupancy in season 1
+     
+        for ( k in 2:K ) { #loop over seasons
+          z[ i, k ] ~ dbern( psi[ i, k ] ) #latent, true occupancy 
+          psi[ i, k ] <- z[ i, k-1 ] * phi[ i, k-1 ] + ( 1 - z[ i, k-1 ] ) * gam[ i, k-1 ] 
+          #model for survival probability:
+          logit( phi[i, k-1 ] ) <- int.phi + 
+                          beta.phi[ 1 ] * ForagArea[ i ] + #beta1
+                          inprod( beta.phi[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
+                          beta.phi[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
+                          beta.phi[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
+                          beta.phi[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
+                          beta.phi[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
+                          beta.phi[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
+                          beta.phi[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
+                          beta.phi[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
+                          beta.phi[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          beta.phi[ Xtot ] * PondAge[ i ] #beta15
+          #model for colonization probability:
+          logit( gam[i, k-1 ] ) <- int.gam + 
+                          beta.gam[ 1 ] * ForagArea[ i ] + #beta1
+                          inprod( beta.gam[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
+                          beta.gam[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
+                          beta.gam[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
+                          beta.gam[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
+                          beta.gam[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
+                          beta.gam[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
+                          beta.gam[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
+                          beta.gam[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
+                          beta.gam[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          beta.gam[ Xtot ] * PondAge[ i ] #beta15
+        } #k season
+      } #i site
+     
+      #for reproductive output:
+      for ( k in 1:K ) { #loop over K seasons 
+        for ( i in 1:M ){ #loop over  nests
+          #model for nest success (prob of producing at least 1 chick)
+          logit( zeta[ i, k ] ) <- int.zeta + eps.zeta[ k ] + epsID.zeta[ i ] +
+                          beta.zeta[ 1 ] * ForagArea[ i ] + #beta1
+                          inprod( beta.zeta[ 2:( XKno + 1 ) ],modXK[ k, 1:XKno ] ) + #betas 2:6
+                          beta.zeta[ ( XKno + 2 ) ] * MinDistO[ i, k ] + #beta7
+                          beta.zeta[ ( XKno + 3 ) ] * MinDistS[ i, k ] + #beta8
+                          beta.zeta[ ( XKno + 4 ) ] * DeltaO[ i, k ] + #beta9
+                          beta.zeta[ ( XKno + 5 ) ] * DeltaS[ i, k ] + #beta10
+                          beta.zeta[ ( XKno + 6 ) ] * UncontO[ i, k ] + #beta11
+                          beta.zeta[ ( XKno + 7 ) ] * UncontS[ i, k ] + #beta12
+                          beta.zeta[ ( XKno + 8 ) ] * CPUE[ i, k ] + #beta13
+                          beta.zeta[ ( XKno + 9 ) ] * CPUEXArea[ i, k ] + #beta14
+                          beta.zeta[ Xtot ] * PondAge[ i ] #beta15 Beaver ponds
+          #nest success related to prob of success conditional on nest occupancy:
+          suc_obs[ i, k ] ~ dbern( zeta[ i, k ] * z[ i, k ] ) 
+     
+          # Bernoulli likelihood for observing suc_obs conditional on occupancy(z=1):
+          lik_sucobs[ i, k ] <- ( zeta[ i, k ] * psi[ i, k ] )^suc_obs[ i,k ] *
+                          ( 1 - zeta[ i, k ] * psi[ i, k ] )^( 1 - suc_obs[ i, k ] ) 
+          # Estimate suc_hat from reproductive model:
+          suc_hat[ i, k ] ~ dbern( zeta[ i, k ] * z[ i, k ] ) 
+          # Bernoulli likelihood for suc_hat conditional on occupancy(z=1):
+          lik_suchat[ i, k ] <- ( zeta[ i, k ] * psi[ i, k ] )^suc_hat[ i,k ] *
+                          ( 1 - zeta[ i, k ] * psi[ i, k ] )^( 1 - suc_hat[ i, k ] ) 
+        } #i
+      } #k
+     
+      #observation model for dynamic nest occupancy:
+      for ( k in 1:K ) { #loop over seasons 
+        #relationship with date of 1st survey modelled as quadratic relationship
+        logit( p[ k ] ) <- int.p + alpha.p[ 1 ] * modXK[ k, (XKno + 1) ] +
+                        alpha.p[ 2 ] * pow( modXK[ k, (XKno + 1) ], 2 )
+        for( i in 1:M ){ #loop over sites
+          y_obs[ i, k ] ~ dbern( z[ i, k ] * p[ k ] ) 
+     
+          # Bernoulli likelihood of observing each y_obs for single survey model (from Lele et al.12):
+          lik_yobs[ i, k ] <- ( psi[ i,k ] * p[ k ] )^y_obs[ i,k ] *
+                          ( 1 - p[ k ] * psi[ i,k ] )^( 1 - y_obs[ i, k ] ) 
+     
+          #estimate y_hat from model: 
+          y_hat[ i, k ] ~ dbern( z[ i, k ] * p[ k ] )
+          # likelihood of observing each y_hat:
+          lik_yhat[ i, k ] <- ( psi[ i,k ] * p[ k ] )^y_hat[ i,k ] *
+                          ( 1 - p[ k ] * psi[ i,k ] )^( 1 - y_hat[ i, k ] ) 
+        } #close i loop
+      }  #close k loop
+     
+      #derived parameters:
+      psi.k[ 1 ] <- psi1 
+      #only sum nests inside VNP that were surveyed that year:
+      n_occ[ 1 ] <- sum( z[ 1:M, 1 ] * inVNP[ 1:M ] * surv_ind[ 1:M, 1 ] ) 
+     
+      for( k in 2:K ){
+        #get yearly means only for nests inside VNP that were surveyed that year:
+        phi.k[ k-1 ] <- sum( phi[ 1:M, k-1 ] * inVNP[ 1:M ] * surv_ind[ 1:M, k-1 ] ) /
+                        sum( inVNP[ 1:M ] * surv_ind[ 1:M, k-1 ] )  
+        gam.k[ k-1 ] <- sum( gam[ 1:M, k-1 ] * inVNP[ 1:M ] * surv_ind[ 1:M, k-1 ] ) /
+                        sum( inVNP[ 1:M ] * surv_ind[ 1:M, k-1 ] )                        
+        psi.k[ k ] <- psi.k[ k-1 ] * phi.k[ k-1 ] + 
+                        ( 1 - psi.k[ k-1 ] ) * gam.k[ k-1 ]
+        n_occ[ k ] <- sum( z[ 1:M, k ] * inVNP[ 1:M ] * surv_ind[ 1:M, k ] )
+      } #k 
+     
+      for( k in 1:K ){
+        #mean yearly probability of a nest being successful (from surveyed nests inside VNP):
+        zeta.k[ k ] <- sum( zeta[ 1:M, k ] * inVNP[ 1:M ] * surv_ind[ 1:M, k ] ) /
+                      sum( inVNP[ 1:M ] * surv_ind[ 1:M, k ] )  
+       } #k
+     
+     } #model close
+     
+     
