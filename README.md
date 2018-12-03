@@ -2,7 +2,7 @@
 Code created by Jen Cruz for: 
 
 Cruz J., Windels S.K., Thogmartin W.E., Crimmins S.M., Grim L.H., Larson J.H., Zuckerberg B. (in review) 
-'Top-down effects of repatriating bald eagles hinder jointly recovering competitors'. Nature Ecology & Evolution.
+'Top-down effects of repatriating bald eagles hinder jointly recovering competitors'. Journal of Animal Ecology.
 
 Purpose:
 Evaluating the influence of top-down and bottom-up factors on the failed recoveries of osprey and great blue heron populations in 
