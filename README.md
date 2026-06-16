@@ -16,4 +16,4 @@ Model fit and evaluation calculations (including COPs, WAIC and Bayesian p value
 
 Detailed model descriptions and formulas for model fit and evaluation approaches are described in detail in the manuscript.
 
-Please email cruzbernal@wisc.edu if you have additional questions. 
+Please email jencruz@boisestate.edu if you have additional questions. 
